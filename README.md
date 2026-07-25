@@ -34,7 +34,7 @@ ast-context-sanitizer/
 └── requirements.txt        # Project dependencies
 
 
-**🚀 Installation & Setup**
+##🚀 Installation & Setup
 Clone the Repository:
 
 
