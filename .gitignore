@@ -1,11 +1,24 @@
-# Python build & virtual environment artifacts
-__pycache__/
-*.py[cod]
-*$py.class
-venv/
+# Virtual Environments
 .venv/
-.pytest_cache/
+env/
+venv/
 
-# IDE settings
+# Python Cache & Build Artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE & Editor Settings
 .idea/
 .vscode/
+*.swp

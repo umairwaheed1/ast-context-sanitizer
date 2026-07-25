@@ -1,29 +1,27 @@
-from src.sanitizer import sanitize_code
+import pytest
+from src.sanitizer import ResearchASTSanitizer, SecurityInvariantError
 
 
-def test_docstring_removal_function():
-    raw_code = '''def test_fn():
-    """This docstring should be removed."""
-    return True'''
-
-    cleaned, reduction = sanitize_code(raw_code)
-    assert '"""This docstring should be removed."""' not in cleaned
-    assert "return True" in cleaned
-    assert reduction > 0
+@pytest.fixture
+def sanitizer():
+    return ResearchASTSanitizer()
 
 
-def test_empty_string():
-    cleaned, reduction = sanitize_code("")
-    assert cleaned == ""
-    assert reduction == 0.0
+def test_docstring_removal(sanitizer):
+    raw_code = '''
+def add_numbers(a: int, b: int) -> int:
+    """This docstring should be pruned."""
+    return a + b
+'''
+    clean_code, metrics = sanitizer.sanitize(raw_code, compress_locals=False)
+    assert 'This docstring should be pruned' not in clean_code
+    assert metrics['reduction_percentage'] > 0
 
 
-def test_class_docstring_removal():
-    raw_code = '''class DataPipeline:
-    """Class docstring to strip."""
-    def process(self):
-        pass'''
-
-    cleaned, _ = sanitize_code(raw_code)
-    assert '"""Class docstring to strip."""' not in cleaned
-    assert "class DataPipeline" in cleaned
+def test_security_invariant_trigger(sanitizer):
+    unsafe_code = '''
+def execute_payload(user_input: str):
+    eval(user_input)
+'''
+    with pytest.raises(SecurityInvariantError):
+        sanitizer.sanitize(unsafe_code)

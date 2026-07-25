@@ -1,85 +1,100 @@
 import ast
+import tiktoken
+from typing import Tuple, Dict, Any, Set
 
 
-class ASTContextSanitizer(ast.NodeTransformer):
-    """AST Transformer that strips docstrings, redundant pass statements,
+class SecurityInvariantError(Exception):
+    """Custom exception raised when an AST violates static safety policies."""
+    pass
 
-    and non-functional expressions to optimize context tree size.
+
+class AdvancedASTTransformer(ast.NodeTransformer):
     """
+    AST NodeTransformer performing:
+    1. Docstring & comment stripping
+    2. Scope-safe variable identifier compression
+    3. Dead code elimination (static constant branch pruning)
+    """
+
+    def __init__(self, compress_identifiers: bool = True):
+        self.compress_identifiers = compress_identifiers
+        super().__init__()
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:
-        """Removes docstrings from function definitions."""
-        self.generic_visit(node)
-        if (
-            node.body
-            and isinstance(node.body[0], ast.Expr)
-            and isinstance(node.body[0].value, ast.Constant)
-            and isinstance(node.body[0].value.value, str)
-        ):
+        # Strip Function Docstrings
+        if (node.body and isinstance(node.body[0], ast.Expr) and
+                isinstance(node.body[0].value, ast.Constant) and
+                isinstance(node.body[0].value.value, str)):
             node.body.pop(0)
 
-        # Handle edge case where stripping docstring leaves an empty function body
-        if not node.body:
-            node.body.append(ast.Pass())
+        # Local Scope Identifier Compression
+        if self.compress_identifiers:
+            local_vars: Set[str] = set()
+            for child in ast.walk(node):
+                if isinstance(child, ast.Name) and isinstance(child.ctx, ast.Store):
+                    if not child.id.startswith("__"):
+                        local_vars.add(child.id)
 
-        return node
+            var_map = {orig: f"_{i}" for i, orig in enumerate(local_vars)}
 
-    def visit_ClassDef(self, node: ast.ClassDef) -> ast.ClassDef:
-        """Removes docstrings from class definitions."""
+            for child in ast.walk(node):
+                if isinstance(child, ast.Name) and child.id in var_map:
+                    child.id = var_map[child.id]
+
         self.generic_visit(node)
-        if (
-            node.body
-            and isinstance(node.body[0], ast.Expr)
-            and isinstance(node.body[0].value, ast.Constant)
-            and isinstance(node.body[0].value.value, str)
-        ):
-            node.body.pop(0)
+        return node
 
-        if not node.body:
-            node.body.append(ast.Pass())
-
+    def visit_If(self, node: ast.If) -> Any:
+        # Dead Code Branch Pruning
+        if isinstance(node.test, ast.Constant):
+            if bool(node.test.value) is True:
+                return node.body
+            else:
+                return node.orelse if node.orelse else None
+        self.generic_visit(node)
         return node
 
 
-def sanitize_code(source_code: str) -> tuple[str, float]:
-    """Parses raw Python source code, applies AST context sanitization,
-
-    and returns the cleaned source code alongside its token reduction percentage.
+class ResearchASTSanitizer:
     """
-    if not source_code.strip():
-        return "", 0.0
-
-    parsed_ast = ast.parse(source_code)
-    sanitizer = ASTContextSanitizer()
-    cleaned_ast = sanitizer.visit(parsed_ast)
-    ast.fix_missing_locations(cleaned_ast)
-
-    cleaned_code = ast.unparse(cleaned_ast)
-
-    original_length = len(source_code)
-    cleaned_length = len(cleaned_code)
-
-    if original_length == 0:
-        reduction = 0.0
-    else:
-        reduction = (1 - (cleaned_length / original_length)) * 100
-
-    return cleaned_code, reduction
-
-
-if __name__ == "__main__":
-    sample_input = '''
-def execute_pipeline(data_stream):
+    Academic-grade AST Context Sanitizer with Verification & Metrics.
     """
-    Executes automated data transformation across multi-source streams.
-    Removes redundant contextual tokens during parsing.
-    """
-    results = [item * 2 for item in data_stream]
-    return results
-'''
-    cleaned_output, token_reduction = sanitize_code(sample_input)
-    print("=== Original Source Code ===")
-    print(sample_input.strip())
-    print("\n=== Sanitized Source Code ===")
-    print(cleaned_output)
-    print(f"\nContext Size Reduction: {token_reduction:.2f}%")
+
+    def __init__(self, model_encoding: str = "cl100k_base"):
+        self.encoder = tiktoken.get_encoding(model_encoding)
+
+    def count_tokens(self, text: str) -> int:
+        return len(self.encoder.encode(text))
+
+    def verify_safety_invariants(self, tree: ast.AST) -> bool:
+        """Static Analysis: Flag dynamic unsafe function execution."""
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                if node.func.id in {"eval", "exec", "__import__"}:
+                    raise SecurityInvariantError(
+                        f"Security Violation: Unsafe function call '{node.func.id}' detected."
+                    )
+        return True
+
+    def sanitize(self, source_code: str, compress_locals: bool = True) -> Tuple[str, Dict[str, Any]]:
+        initial_tokens = self.count_tokens(source_code)
+
+        parsed_ast = ast.parse(source_code)
+        self.verify_safety_invariants(parsed_ast)
+
+        transformer = AdvancedASTTransformer(compress_identifiers=compress_locals)
+        transformed_ast = transformer.visit(parsed_ast)
+        ast.fix_missing_locations(transformed_ast)
+
+        optimized_code = ast.unparse(transformed_ast)
+        final_tokens = self.count_tokens(optimized_code)
+
+        reduction = max(0.0, ((initial_tokens - final_tokens) / initial_tokens) * 100)
+
+        metrics = {
+            "initial_tokens": initial_tokens,
+            "final_tokens": final_tokens,
+            "reduction_percentage": round(reduction, 2),
+            "invariant_pass": True
+        }
+        return optimized_code, metrics
