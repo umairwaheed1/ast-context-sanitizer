@@ -15,10 +15,11 @@
 * **Security Invariant Verification:** Detects and flags unsafe dynamic execution calls (`eval`, `exec`, `__import__`).
 * **Precise Token Metrics:** Calculates exact token reductions using `tiktoken` encodings (`cl100k_base`).
 
+---
 
-📁 **Project Architecture**
+## 📁 Project Architecture
 
-**text**
+```text
 ast-context-sanitizer/
 ├── .github/workflows/      # CI/CD verification pipelines
 ├── docs/                   # Technical reports and documentation
