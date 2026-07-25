@@ -15,11 +15,10 @@
 * **Security Invariant Verification:** Detects and flags unsafe dynamic execution calls (`eval`, `exec`, `__import__`).
 * **Precise Token Metrics:** Calculates exact token reductions using `tiktoken` encodings (`cl100k_base`).
 
----
 
-## 📁 Project Architecture
+📁 **Project Architecture**
 
-```text
+**text**
 ast-context-sanitizer/
 ├── .github/workflows/      # CI/CD verification pipelines
 ├── docs/                   # Technical reports and documentation
@@ -34,33 +33,32 @@ ast-context-sanitizer/
 └── requirements.txt        # Project dependencies
 
 
-🚀 Installation & Setup
+**🚀 Installation & Setup**
 Clone the Repository:
 
-PowerShell
+
 git clone [https://github.com/umairwaheed1/ast-context-sanitizer.git](https://github.com/umairwaheed1/ast-context-sanitizer.git)
 cd ast-context-sanitizer
 Create and Activate Virtual Environment:
 
-PowerShell
+
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-Install Dependencies:
 
-PowerShell
+**Install Dependencies:**
+
 pip install -r requirements.txt
-💻 Usage
+💻 **Usage**
 Command-Line Interface (CLI)
 Run the sanitizer directly on any Python script to view token savings and output the optimized code:
 
-PowerShell
+
 python main.py -i benchmark.py
 To save the sanitized code to a separate output file:
 
-PowerShell
+
 python main.py -i benchmark.py -o sanitized_output.py
-Programmatic Usage
-Python
+
 from src.sanitizer import ResearchASTSanitizer
 
 sanitizer = ResearchASTSanitizer()
@@ -74,8 +72,7 @@ def complex_algorithm(data: list) -> int:
 optimized_code, metrics = sanitizer.sanitize(source_code)
 print(optimized_code)
 print(f"Token Reduction: {metrics['reduction_percentage']}%")
-🧪 Running Tests
-Execute the unit test suite using pytest:
 
-PowerShell
+🧪** Running Tests**
+**Execute the unit test suite using pytest:**
 pytest tests/ -v
